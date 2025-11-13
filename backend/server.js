@@ -57,6 +57,11 @@ app.use(cors({
 }));
 
 app.use(express.json());
+// simple request logger — helpful for debugging incoming requests on Render
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${new Date().toISOString()} ${req.method} ${req.originalUrl} Host:${req.headers.host} Origin:${req.headers.origin || ''}`);
+  next();
+});
 
 // ------------------------
 // Utility: file helpers
