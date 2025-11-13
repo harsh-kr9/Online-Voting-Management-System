@@ -1,5 +1,5 @@
 // Backend base URL
-const API_BASE = "http://localhost:3000";
+const API_BASE = "https://backend-myvote.onrender.com";
 let token = localStorage.getItem("token") || null;
 
 function qs(id){return document.getElementById(id);}
