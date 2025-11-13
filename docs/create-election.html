@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Create Election — myVote (Demo popup)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --purple: #5b2baf;
+      --muted: #64748b;
+      --bg: #2267A0;   /* BLUE BACKGROUND ADDED */
+      --card: #ffffff;
+    }
+
+    html,body {
+      height:100%;
+      margin:0;
+      font-family:Inter,system-ui,Arial,sans-serif;
+      background:var(--bg); /* BLUE BG ACTIVE */
+      color:#0f172a;
+    }
+
+    .container {
+      max-width:980px;
+      margin:28px auto;
+      padding:20px;
+    }
+
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:18px;
+    }
+
+    header .brand { display:flex; gap:12px; align-items:center; }
+    header .brand .title { font-weight:700; color:var(--purple); }
+
+    .card {
+      background:var(--card);
+      padding:18px;
+      border-radius:12px;
+      box-shadow:0 8px 24px rgba(2,6,23,0.06);
+    }
+
+    h1 { margin:0 0 6px 0; font-size:1.25rem; }
+    .muted { color:var(--muted); font-size:0.95rem; }
+
+    form .row {
+      display:flex; gap:12px; margin-bottom:12px;
+      align-items:flex-start; flex-wrap:wrap;
+    }
+
+    .col { flex:1; min-width:0; }
+
+    label { display:block; margin-bottom:6px; font-weight:600; font-size:0.95rem; }
+
+    input[type="text"], input[type="datetime-local"], textarea, select {
+      width:100%; padding:10px 12px;
+      border-radius:8px; border:1px solid #e6e9ef;
+      background:#fff; box-sizing:border-box;
+    }
+
+    .candidates { margin-top:12px; display:flex; flex-direction:column; gap:10px; }
+
+    .candidate-row {
+      display:flex; gap:8px; align-items:flex-start;
+      background:#fafafa; padding:10px;
+      border-radius:8px; border:1px solid #eef2f7;
+    }
+
+    .remove-btn {
+      background:transparent; border:1px solid #ef4444;
+      color:#ef4444; padding:6px 8px; border-radius:6px; cursor:pointer;
+    }
+
+    .actions { display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+
+    .btn { padding:10px 14px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+    .btn-primary { background:var(--purple); color:#fff; }
+    .btn-muted { background:#eef2f7; color:#0f172a; border:1px solid #e6e9ef; }
+
+    /* Popup */
+    .popup-overlay {
+      position: fixed; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.55);
+      z-index: 9999; padding: 20px;
+    }
+
+    .popup-box {
+      width: 100%; max-width: 420px;
+      background: #fff; border-radius: 14px;
+      padding: 22px; text-align: center;
+      box-shadow: 0 20px 50px rgba(2,6,23,0.25);
+      animation: popupIn .18s ease;
+    }
+
+    .popup-strong {
+      display:block; margin-top:10px;
+      font-weight:800; color:var(--purple); font-size:1.05rem;
+    }
+
+    .popup-btn {
+      margin-top:16px; padding:10px 16px; border-radius:10px;
+      border:none; cursor:pointer; font-weight:700;
+      background:var(--purple); color:#fff;
+    }
+
+    @keyframes popupIn { from { transform: translateY(8px) scale(.98); opacity:0 } to { transform: translateY(0) scale(1); opacity:1 } }
+
+    @media (max-width:700px) {
+      .candidate-row { flex-direction:column; }
+      .actions { flex-direction:column; align-items:stretch; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header>
+  <div class="brand">
+    <svg width="36" height="36" viewBox="0 0 36 36">
+      <rect rx="6" width="36" height="36" fill="#2267A0"></rect>
+      <text x="50%" y="58%" fill="white" font-size="20" font-family="Arial" font-weight="700" text-anchor="middle">MV</text>
+    </svg>
+    <div>
+      <!-- myVote LIGHT PURPLE -->
+      <div class="title" style="color:#c7a6ff; font-weight:700;">myVote</div>
+
+      <!-- Create elections WHITE -->
+      <div class="muted" style="color:white;">Create elections</div>
+    </div>
+  </div>
+
+  <!-- Logged in as WHITE -->
+  <div class="muted" style="color:white;">
+    Logged in as <strong id="loggedUserName" style="color:white;">Loading...</strong>
+  </div>
+</header>
+
+
+    <main class="card">
+      <h1>Create an election</h1>
+
+      <form id="electionForm" autocomplete="off" novalidate>
+        
+        <div class="row">
+          <div class="col">
+            <label for="title">Election Title</label>
+            <input id="title" type="text" placeholder="Student Council 2026">
+          </div>
+          <div class="col">
+            <label for="shortDesc">Short description</label>
+            <input id="shortDesc" type="text" placeholder="Optional">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="start">Start (local)</label>
+            <input id="start" type="datetime-local">
+          </div>
+          <div class="col">
+            <label for="end">End (local)</label>
+            <input id="end" type="datetime-local">
+          </div>
+        </div>
+
+        <hr>
+
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">Candidates</h3>
+          <button id="addCandidate" type="button" class="btn btn-muted">+ Add candidate</button>
+        </div>
+
+        <div id="candidates" class="candidates"></div>
+
+        <div class="actions">
+          <button id="createBtn" type="button" class="btn btn-primary">Create Election</button>
+          <button id="resetBtn" type="button" class="btn btn-muted">Reset</button>
+        </div>
+
+      </form>
+    </main>
+  </div>
+
+  <!-- Popup -->
+  <div id="successPopup" class="popup-overlay">
+    <div class="popup-box">
+      <h3>Election created successfully</h3>
+      <p>Your ID number is</p>
+      <div class="popup-strong" id="electionIdText">IDSC201</div>
+      <button class="popup-btn" id="popupOkBtn">OK</button>
+    </div>
+  </div>
+
+  <script>
+    // -------------------------------
+    // SHOW REAL LOGGED-IN USER NAME
+    // -------------------------------
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        document.getElementById("loggedUserName").textContent =
+          payload.name || payload.email || "User";
+      } else {
+        document.getElementById("loggedUserName").textContent = "Guest";
+      }
+    } catch {
+      document.getElementById("loggedUserName").textContent = "User";
+    }
+
+    // -------------------------------
+    // Candidate Row Generator
+    // -------------------------------
+    function escapeHtml(s) {
+      return (s ?? "").replace(/[&<>"']/g, m => (
+        {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]
+      ));
+    }
+
+    function makeCandidateRow(name="", party="", manifesto="") {
+      const row = document.createElement("div");
+      row.className = "candidate-row";
+      row.innerHTML = `
+        <div class="col">
+          <label>Name</label>
+          <input name="candidateName" type="text" placeholder="Full name" value="${escapeHtml(name)}">
+        </div>
+        <div style="width:180px">
+          <label>Party</label>
+          <input name="candidateParty" type="text" placeholder="Party / Independent" value="${escapeHtml(party)}">
+        </div>
+        <div class="col">
+          <label>Manifesto</label>
+          <input name="candidateManifesto" type="text" placeholder="Short manifesto" value="${escapeHtml(manifesto)}">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="remove-btn">Remove</button>
+        </div>
+      `;
+      row.querySelector(".remove-btn").addEventListener("click", () => row.remove());
+      return row;
+    }
+
+    const candidatesContainer = document.getElementById("candidates");
+    const addBtn = document.getElementById("addCandidate");
+    const createBtn = document.getElementById("createBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    function loadDefaults() {
+      candidatesContainer.innerHTML = "";
+      candidatesContainer.appendChild(makeCandidateRow());
+      candidatesContainer.appendChild(makeCandidateRow());
+    }
+    loadDefaults();
+
+    addBtn.addEventListener("click", ()=>{
+      candidatesContainer.appendChild(makeCandidateRow());
+    });
+
+    resetBtn.addEventListener("click", ()=>{
+      if (confirm("Reset form?")) loadDefaults();
+    });
+
+    // -------------------------------
+    // Popup
+    // -------------------------------
+    const popup = document.getElementById("successPopup");
+    const popupOk = document.getElementById("popupOkBtn");
+
+    function showPopup(id) {
+      document.getElementById("electionIdText").textContent = id;
+      popup.style.display = "flex";
+    }
+    function closePopup() { popup.style.display = "none"; }
+
+    popupOk.onclick = closePopup;
+    popup.onclick = (e)=>{ if (e.target===popup) closePopup(); };
+
+    // -------------------------------
+    // CREATE BUTTON
+    // -------------------------------
+    createBtn.addEventListener("click", ()=>{
+      showPopup("IDSC201");
+    });
+  </script>
+
+</body>
+</html>

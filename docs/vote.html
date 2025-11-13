@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vote — myVote (Student Council Elections 2025)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --purple:#5b2baf; --bg:#2267A0; --muted:#64748b; --card:#fff }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#0f172a}
+  .wrap{max-width:980px;margin:28px auto;padding:20px}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .brand .title{font-weight:700;color:rgb(235, 146, 241)} /* WHITE TOP TITLE */
+  .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.12)}
+  h1{margin:0 0 8px}
+  .subtitle{color:#475569;margin-bottom:12px}
+  .candidate{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid #eef2f7;background:#fff}
+  .avatar{width:56px;height:56px;border-radius:8px;background:linear-gradient(180deg,#f3f4f6,#fff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#374151;flex-shrink:0}
+  .candidate-body{flex:1}
+  .candidate-title{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .name{font-weight:700}
+  .party{font-size:0.9rem;color:#6b7280}
+  .manifesto{color:#334155;margin-top:6px}
+  .actions{display:flex;gap:8px;align-items:center;margin-top:12px}
+  .btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+  .btn-primary{background:var(--purple);color:#fff}
+  .btn-ghost{background:transparent;border:1px solid #e6e9ef}
+  .chart-wrap{display:flex;gap:22px;align-items:flex-start;margin-top:16px;flex-wrap:wrap}
+  canvas{background:#fff;border-radius:8px;box-shadow:0 8px 20px rgba(2,6,23,0.06)}
+  @media (max-width:700px){ .candidate{flex-direction:column;align-items:flex-start} .chart-wrap{flex-direction:column} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <svg width="36" height="36" viewBox="0 0 36 36"><rect rx="6" width="36" height="36" fill="#2267A0"></rect><text x="50%" y="58%" fill="white" font-size="20" font-family="Arial" font-weight="700" text-anchor="middle">MV</text></svg>
+        <div>
+          <div class="title">myVote</div>
+          <div class="muted" style="color:white">Vote & Results</div>
+        </div>
+      </div>
+      <div style="color:white">Logged in as <strong id="loggedUser">Guest</strong></div>
+    </header>
+
+    <main class="card" role="main">
+      <h1>Your Vote Matters!</h1>
+      <div class="subtitle" id="subtitle">Enter Election ID to load candidates</div>
+
+      <div id="candidatesArea"></div>
+
+      <div id="afterVoteArea" style="display:none">
+        <h3>Current results</h3>
+        <div class="chart-wrap">
+          <canvas id="pieCanvas" width="360" height="360"></canvas>
+          <div style="min-width:200px;">
+            <div id="legend"></div>
+            <div style="margin-top:12px" id="totalVotesText" class="muted-small"></div>
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+              <button id="downloadCsv" class="btn btn-primary">Download CSV</button>
+              <button id="resetVotesBtn" class="btn btn-ghost" title="Reset votes (admin)">Reset Votes</button>
+              <div id="resetStatus" style="margin-left:12px;color:#6b7280;font-size:0.95rem"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ID OVERLAY -->
+  <div id="idOverlay" class="overlay" style="display:none;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)">
+    <div class="box" style="background:white;padding:18px;border-radius:12px;max-width:420px;width:90%">
+      <h3>Enter Election ID</h3>
+      <p class="muted-small">Paste the Election ID to load the ballot.</p>
+      <input id="idInput" placeholder="Enter Election ID" style="width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:8px" />
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="cancelId" class="btn btn-ghost">Cancel</button>
+        <button id="submitId" class="btn btn-primary">Load</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN PROMPT -->
+  <div id="loginOverlay" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)">
+    <div class="box" style="background:white;padding:18px;border-radius:12px;max-width:420px;width:90%">
+      <h3>Login required</h3>
+      <p class="muted-small">Only logged-in users may vote.</p>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button id="closeLogin" class="btn btn-ghost">Close</button>
+        <a href="login.html" class="btn btn-primary" style="color:white;text-decoration:none">Go to Login</a>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+
+  /* DEMO DATA: support two demo election IDs (IDSC202 and IDSC201) */
+  const DEMO_ELECTIONS = {
+    "IDSC202": {
+      id: "IDSC202",
+      title: "Student Council — Demo 202 (IDSC202)",
+      candidates: [
+        {id:"c1", name:"Aditi Sharma", party:"Youth Cultural Forum", manifesto:"More cultural events"},
+        {id:"c2", name:"Rohit Verma", party:"Fit & Active Club", manifesto:"Improve sports facilities"},
+        {id:"c3", name:"Priya Nair", party:"Student Progress Union", manifesto:"Better scheduling & notifications"},
+        {id:"c4", name:"Manish Gupta", party:"Student Finance Committee", manifesto:"Transparent fund usage"},
+        {id:"c5", name:"Sneha Kulkarni", party:"Women Empowerment Forum", manifesto:"Campus safety drives"}
+      ]
+    },
+    "IDSC201": {
+      id: "IDSC201",
+      title: "Student Council — Demo 201 (IDSC201)",
+      candidates: [
+        {id:"a1", name:"Abhimanyu Kumar", party:"Culture Circle", manifesto:"More student fests"},
+        {id:"a2", name:"Ankit Kumar", party:"Sports Guild", manifesto:"Upgrade sports ground"},
+        {id:"a3", name:"Ritesh Ghosh", party:"Eco Club", manifesto:"Green campus initiatives"},
+        {id:"a4", name:"Vikram Paul", party:"Tech Forum", manifesto:"Better Tech Events"},
+        {id:"a5", name:"Rhea Deshmukh", party:"Welfare Board", manifesto:"Student welfare programs"}
+      ]
+    },
+    "IDSC203": {
+      id: "IDSC203",
+      title: "Student Council — Demo 201 (IDSC203)",
+      candidates: [
+        {id:"a1", name:"Neha Patil", party:"Culture Circle", manifesto:"More student fests"},
+        {id:"a2", name:"Karan Mehta", party:"Sports Guild", manifesto:"Upgrade sports ground"},
+        {id:"a3", name:"Sana Roy", party:"Eco Club", manifesto:"Green campus initiatives"},
+        {id:"a4", name:"Vikram Joshi", party:"Tech Forum", manifesto:"Better lab access hours"},
+        {id:"a5", name:"Rhea Deshmukh", party:"Welfare Board", manifesto:"Student welfare programs"}
+      ]
+    }
+  };
+
+  /* HELPERS */
+  const $ = id => document.getElementById(id);
+  function decodeToken(t){ try{ return JSON.parse(atob(t.split('.')[1])); }catch{return null;} }
+  function escapeHtml(s){ return (s??"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" }[m])); }
+
+  /* LOGIN NAME */
+  (function showUser(){
+    const t = localStorage.getItem('token');
+    if(t){
+      const p = decodeToken(t);
+      $('loggedUser').textContent = (p && (p.name || p.email)) ? (p.name || p.email) : "User";
+    }
+  })();
+
+  /* STORAGE KEYS */
+  const votesKey = id => `election_votes_${id}`;
+  const votedKey = (id,user) => `election_voted_${id}_${user}`;
+
+  function readTotals(id){
+    try { return JSON.parse(localStorage.getItem(votesKey(id))) || null; }
+    catch { return null; }
+  }
+  function writeTotals(id,obj){ localStorage.setItem(votesKey(id), JSON.stringify(obj)); }
+  function readUserVoted(id,user){ return localStorage.getItem(votedKey(id,user)); }
+  function writeUserVoted(id,user,cand){ localStorage.setItem(votedKey(id,user), cand); }
+
+  /* RENDER CANDIDATES */
+  const candidatesArea = $('candidatesArea');
+  const afterVoteArea = $('afterVoteArea');
+  let currentElectionId = null;
+  let currentUserId = null;
+
+  function renderCandidates(id, candidates){
+    currentElectionId = id;
+    candidatesArea.innerHTML = "";
+    afterVoteArea.style.display = "none";
+    $('subtitle').textContent = `Election ID: ${id}`;
+
+    let totals = readTotals(id);
+    if(!totals){
+      totals = {};
+      candidates.forEach(c=> totals[c.id] = 0);
+      writeTotals(id, totals);
+    }
+
+    const t = localStorage.getItem('token');
+    currentUserId = t ? (decodeToken(t).id || decodeToken(t).email || decodeToken(t).name || 'user') : null;
+    const userVote = currentUserId ? readUserVoted(id,currentUserId) : null;
+
+    candidates.forEach(c=>{
+      const div = document.createElement('div');
+      div.className = "candidate";
+      div.innerHTML = `
+        <div class="avatar">${escapeHtml(c.name.split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase())}</div>
+        <div class="candidate-body">
+          <div class="candidate-title">
+            <div class="name">${escapeHtml(c.name)}</div>
+            <div class="party">• ${escapeHtml(c.party)}</div>
+          </div>
+          <div class="manifesto">${escapeHtml(c.manifesto)}</div>
+          <div class="actions"></div>
+        </div>`;
+
+      const btn = document.createElement('button');
+      btn.className = "btn btn-primary";
+      btn.textContent = "Vote";
+
+      btn.onclick = ()=>{
+
+        if(!currentUserId){
+          $('loginOverlay').style.display='flex';
+          return;
+        }
+
+        if(userVote){
+          alert("You have already voted. Cannot change vote.");
+          return;
+        }
+
+        if(!confirm(`Confirm vote for ${c.name}?`)) return;
+
+        totals[c.id] = (totals[c.id]||0) + 1;
+        writeTotals(id, totals);
+        writeUserVoted(id,currentUserId,c.id);
+
+        showResults(id, candidates);
+      };
+
+      if(userVote){
+        btn.disabled = true;
+        btn.textContent = "Vote (disabled)";
+        btn.className = "btn btn-ghost";
+      }
+
+      div.querySelector(".actions").appendChild(btn);
+      candidatesArea.appendChild(div);
+    });
+
+    if(userVote) showResults(id, candidates);
+  }
+
+  /* RESULTS */
+  function showResults(id, candidates){
+    afterVoteArea.style.display = "block";
+
+    const totals = readTotals(id) || {};
+    const data = candidates.map(c=> ({
+      id: c.id,
+      name: c.name,
+      party: c.party,
+      votes: Number(totals[c.id]||0)
+    }));
+
+    renderPie("pieCanvas", data);
+    renderLegend("legend", data);
+    $('totalVotesText').textContent = `Total votes: ${data.reduce((a,b)=>a+b.votes,0)}`;
+
+    $('downloadCsv').onclick = ()=> {
+      const rows = [["candidate_id","name","party","votes"]];
+      data.forEach(d=> rows.push([d.id, d.name, d.party, d.votes]));
+      const csv = rows.map(r=>r.join(",")).join("\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+      a.download = `${id}_results.csv`;
+      a.click();
+    };
+  }
+
+  /* PIE CHART */
+  function renderPie(id,data){
+    const cv = $(id); const ctx = cv.getContext("2d");
+    const total = data.reduce((a,b)=>a+b.votes,0) || 1;
+    const cx = cv.width/2, cy=cv.height/2, r=Math.min(cx,cy)-10;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    let start = -Math.PI/2;
+    const colors = ["#c7a6ff","#a88bff","#8a6bff","#6c4bff","#4f2bff"];
+
+    data.forEach((d,i)=>{
+      const slice = d.votes/total;
+      const end = start + slice*2*Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,start,end);
+      ctx.closePath();
+      ctx.fillStyle = colors[i%colors.length];
+      ctx.fill();
+      start = end;
+    });
+
+    ctx.fillStyle="#fff";
+    ctx.beginPath();
+    ctx.arc(cx,cy,r*0.5,0,2*Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle="#0f172a";
+    ctx.font="bold 14px Inter";
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+    ctx.fillText(`${total} votes`,cx,cy);
+  }
+
+  /* LEGEND */
+  function renderLegend(id,data){
+    const el = $(id); el.innerHTML="";
+    const colors = ["#c7a6ff","#a88bff","#8a6bff","#6c4bff","#4f2bff"];
+    data.forEach((d,i)=>{
+      const row=document.createElement("div");
+      row.style.display="flex";
+      row.style.alignItems="center";
+      row.style.gap="8px";
+      row.style.marginBottom="8px";
+      row.innerHTML = `
+        <div style="width:14px;height:14px;border-radius:3px;background:${colors[i%colors.length]}"></div>
+        <div style="font-weight:700">${escapeHtml(d.name)}</div>
+        <div style="color:#6b7280;margin-left:6px">• ${escapeHtml(d.party)}</div>
+        <div style="margin-left:auto;font-weight:700">${d.votes}</div>`;
+      el.appendChild(row);
+    });
+  }
+
+  /* RESET BUTTON (client & server fallback) */
+  (function wireResetButton(){
+    const resetBtn = $('resetVotesBtn');
+    const resetStatus = $('resetStatus');
+    if(!resetBtn) return;
+
+    function getTokenPayload(){
+      try { const t = localStorage.getItem('token'); return t ? JSON.parse(atob(t.split('.')[1])) : null; } catch { return null; }
+    }
+    function isAdmin(){
+      const p = getTokenPayload();
+      return !!(p && (p.isAdmin || p.role === 'admin' || p.admin === true));
+    }
+
+    function clientReset(electionId){
+      localStorage.removeItem(`election_votes_${electionId}`);
+      const prefix = `election_voted_${electionId}_`;
+      const toRemove = [];
+      for(let i=0;i<localStorage.length;i++){
+        const k = localStorage.key(i);
+        if(k && k.startsWith(prefix)) toRemove.push(k);
+      }
+      toRemove.forEach(k=> localStorage.removeItem(k));
+    }
+
+    async function serverReset(electionId, token){
+      try {
+        const res = await fetch(`/api/elections/${encodeURIComponent(electionId)}/reset`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if(!res.ok){ const txt = await res.text().catch(()=>null); throw new Error(`Server ${res.status}${txt?': '+txt:''}`); }
+        return true;
+      } catch (err) { console.warn('Server reset failed:', err); return false; }
+    }
+
+    resetBtn.addEventListener('click', async () => {
+      const electionId = currentElectionId || (new URLSearchParams(location.search).get('id'));
+      if(!electionId){ alert('No election loaded to reset'); return; }
+      if(!confirm(`Reset all votes and per-user vote flags for ${electionId}? This cannot be undone.`)) return;
+
+      resetStatus.textContent = 'Resetting…'; resetBtn.disabled = true;
+
+      const token = localStorage.getItem('token');
+      let didServer = false;
+      if(token && isAdmin()){
+        const ok = await serverReset(electionId, token);
+        if(ok){ resetStatus.textContent = 'Reset on server succeeded.'; didServer = true; }
+        else resetStatus.textContent = 'Server reset failed — falling back to local reset.';
+      } else {
+        if(!token) resetStatus.textContent = 'No token: performing local reset only.';
+        else resetStatus.textContent = 'Not an admin: performing local reset only.';
+      }
+
+      clientReset(electionId);
+
+      // create zero totals and persist (ensures consistent UI)
+      try {
+        const election = DEMO_ELECTIONS[electionId];
+        const zeroTotals = {};
+        if(election && Array.isArray(election.candidates)) election.candidates.forEach(c=> zeroTotals[c.id]=0);
+        writeTotals(electionId, zeroTotals);
+      } catch (e) { console.warn('Could not write zero totals via helper'); }
+
+      if(typeof renderCandidates === 'function' && DEMO_ELECTIONS[electionId]) {
+        renderCandidates(electionId, DEMO_ELECTIONS[electionId].candidates);
+      } else {
+        location.reload();
+        return;
+      }
+
+      resetBtn.disabled = false;
+      resetStatus.textContent = didServer ? 'Reset complete (server & client).' : 'Reset complete (client only).';
+      setTimeout(()=> resetStatus.textContent = '', 3000);
+    });
+  })();
+
+  /* ID OVERLAY handlers */
+  $('submitId').onclick = ()=> {
+    const id = ($('idInput').value||"").trim();
+    if(!id){ $('idInput').focus(); return; }
+    $('idOverlay').style.display='none';
+    loadElection(id);
+  };
+  $('cancelId').onclick = ()=> $('idOverlay').style.display='none';
+  $('closeLogin').onclick = ()=> $('loginOverlay').style.display='none';
+
+  /* LOADING */
+  function loadElection(id){
+    const upper = id ? String(id).toUpperCase() : '';
+    if(!DEMO_ELECTIONS[upper]){ alert("Election not found (demo supports IDSC202 and IDSC201)."); return; }
+    const e = DEMO_ELECTIONS[upper];
+    renderCandidates(upper, e.candidates);
+  }
+
+  /* AUTO LOAD ID FROM URL */
+  const urlId = new URLSearchParams(location.search).get('id');
+  if(urlId){ loadElection(urlId); }
+  else { $('idOverlay').style.display='flex'; $('idInput').focus(); }
+
+})();
+</script>
+
+</body>
+</html>

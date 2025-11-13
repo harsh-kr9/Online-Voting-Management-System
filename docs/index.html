@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>myVote — Simple Online Elections</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* small additions to integrate welcome + logout */
+    .top-actions { display:flex; gap:12px; align-items:center; }
+    .welcome-box { background: rgba(255,255,255,0.06); padding:10px 14px; border-radius:10px; display:flex; gap:12px; align-items:center; }
+    .user-name { font-weight:700; color:#fff; }
+    .logout-btn { background:transparent; border:1px solid rgba(255,255,255,0.18); color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; }
+    .login-btn, .register-btn { background: white; color: #5b2baf; padding:8px 12px; border-radius:8px; border: none; cursor:pointer; font-weight:700; }
+
+    /* layout defaults */
+    body { margin:0; font-family:Inter, Arial, sans-serif; background: #fff; color:#0f172a; }
+    .container { max-width:1100px; margin:0 auto; padding:0 20px; }
+
+    /* ---------------------------
+       HEADER (updated to match ref)
+       --------------------------- */
+    .site-header {
+      /* keep purple header as requested but with softer gradient */
+      background: linear-gradient(90deg, #6b46c1 0%, #5b2baf 60%);
+      padding:18px 0;
+      color:#fff;
+      position:relative;
+      z-index:20;
+      box-shadow: 0 6px 18px rgba(91,43,175,0.12);
+    }
+    .header-inner {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand img { width:44px; height:44px; border-radius:8px; box-shadow:0 8px 20px rgba(2,6,23,0.08) }
+    .brand-title { font-weight:800; font-size:1.05rem; color:#fff; letter-spacing:0.3px; }
+    .main-nav a {
+      color: rgba(255,255,255,0.95);
+      text-decoration:none;
+      margin-left:16px;
+      font-weight:600;
+    }
+
+    /* ---------------------------
+       HERO (updated to match ref)
+       --------------------------- */
+    .hero {
+      padding:60px 0;
+      background: linear-gradient(180deg,#fff 0%, #f8f6ff 100%);
+    }
+
+    /* hero inner split layout */
+    .hero-inner {
+      display:flex;
+      align-items:center;
+      gap:28px;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .hero-copy {
+      flex:1 1 420px;
+      max-width:640px;
+    }
+
+    /* main headline — blackish + slight grey shadow as requested */
+    .hero-copy h1 {
+      color: #0b1220; /* blackish */
+      font-weight:900;
+      font-size:2.8rem;
+      margin:0 0 8px 0;
+      line-height:1.02;
+      text-shadow: 0 8px 20px rgba(15,23,42,0.06);
+    }
+
+    .hero-copy h1 .accent { color:#5b2baf; } /* accent when needed */
+
+    .hero-copy p.lead {
+      margin:10px 0 18px 0;
+      color:#475569;
+      font-size:1rem;
+      max-width:46rem;
+    }
+
+    .quick-features { margin: 12px 0 0 20px; color:#475569; }
+
+    /* CTA button style (kept same-ish) */
+    .cta-button {
+      background-color: #5b2baf;
+      color: #fff;
+      border: none;
+      padding: 12px 26px;
+      font-size: 1rem;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+      box-shadow: 0 12px 30px rgba(91,43,175,0.18);
+      margin-top:18px;
+    }
+    .cta-button:hover { transform: translateY(-2px); box-shadow: 0 18px 42px rgba(91,43,175,0.22); }
+
+    /* HERO MEDIA: right side decorative area that uses your uploaded image */
+    .hero-media {
+      flex:0 0 420px;
+      max-width:420px;
+      height:260px;
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(16,24,40,0.12);
+      background: linear-gradient(180deg,#e9dbff,#f3eaff);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .hero-media img {
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      object-position:center;
+      display:block;
+      filter: saturate(.92) contrast(.98);
+    }
+
+    /* small responsive tweaks */
+    @media (max-width:900px) {
+      .hero-copy h1 { font-size:2.2rem; }
+      .hero-media { flex-basis:320px; height:220px; max-width:320px; border-radius:14px; }
+    }
+    @media (max-width:640px) {
+      .main-nav { display:none; } /* collapse nav on very small screens (keep existing auth area visible) */
+      .hero-inner { flex-direction:column-reverse; align-items:flex-start; }
+      .hero-media { width:100%; max-width:100%; height:200px; }
+      .hero-copy h1 { font-size:1.8rem; }
+    }
+
+    /* ===========================
+       Existing styles below remain unchanged
+       (features, process etc. preserved)
+       =========================== */
+
+    /* features grid: equal height cards and restrained descriptions */
+    .features-grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap:18px;
+      margin-top:18px;
+      grid-auto-rows: 1fr; /* ensures uniform card heights */
+    }
+    .feature-card {
+      background:#fff;
+      padding:16px;
+      border-radius:10px;
+      box-shadow:0 6px 18px rgba(2,6,23,0.06);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:150px;
+      color:inherit;
+      text-decoration:none;
+    }
+    .feature-card:focus { outline: 3px solid rgba(91,43,175,0.18); outline-offset:3px; }
+    .feature-card h3 { margin:0; font-size:1.05rem; }
+    .feature-card p {
+      margin:0;
+      font-size:0.95rem;
+      line-height:1.2;
+      color:#374151;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .process-section { padding:40px 0; }
+    .process-steps {
+      display:flex;
+      flex-direction:column; /* vertical stack */
+      gap:14px;
+      margin-top:12px;
+    }
+    .process-step {
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      background:#fff;
+      padding:14px;
+      border-radius:10px;
+      box-shadow:0 6px 18px rgba(2,6,23,0.06);
+    }
+    .step-number {
+      min-width:72px;
+      height:auto;
+      border-radius:0;
+      background:transparent;
+      color:#5b2baf;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:800;
+      font-size:1.5rem;
+      flex-shrink:0;
+      padding:8px 0;
+    }
+    .step-body h3 { margin:0 0 6px 0; }
+    .step-body p { margin:0; color:#374151; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44'><rect rx='8' width='44' height='44' fill='%232267A0'/><text x='50%' y='58%' fill='white' font-size='20' font-family='Arial' font-weight='800' text-anchor='middle'>MV</text></svg>" alt="logo" />
+        <span class="brand-title">myVote</span>
+      </div>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#features">Features</a>
+        <a href="#why">Why myVote</a>
+        <a href="#process">Our Process</a>
+      </nav>
+
+      <!-- AUTH AREA: populated by script (Login/Register or Welcome + Logout) -->
+      <div class="top-actions" style="align-items:center">
+        <div id="authArea"></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO (updated to match reference image: left copy, right decorative purple block using uploaded image) -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <h1>Your Vote <span class="accent">Your Power</span></h1>
+          <p class="lead">Caste your vote securely and effortlessly through our online voting platform. Choose your candidates, submit your vote, and view results - all in one place. A simple, transparent, and reliable way to participate in elections.</p>
+
+          <ul class="quick-features" aria-hidden="true">
+            <li>OTP-based authentication</li>
+            <li>One vote per user</li>
+            <li>Admin-managed elections</li>
+          </ul>
+
+          <div style="margin-top:18px;">
+            <button class="cta-button" onclick="window.location.href='create-election.html'">Create Election</button>
+            <button class="cta-button" style="background:#fff;color:#5b2baf;margin-left:12px" onclick="window.location.href='register.html'">Register</button>
+          </div>
+        </div>
+
+        <div class="hero-media" aria-hidden="true">
+          <!-- using uploaded image — replace filename if needed -->
+          <img src="logo.png" alt="decorative purple artwork">
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="section">
+      <div class="container">
+        <h2>Features</h2>
+
+        <div class="features-grid">
+          <!-- User Registration card: entire card clickable (no separate button) -->
+          <a href="register.html" class="feature-card" aria-labelledby="freg-title">
+            <div style="font-size:20px">🔐</div>
+            <h3 id="freg-title">User Registration</h3>
+            <p>Signup using email or phone. Passwords stored securely (hashed).</p>
+          </a>
+
+          <article class="feature-card" role="article" aria-labelledby="otp-title">
+            <div style="font-size:20px">📲</div>
+            <h3 id="otp-title">OTP Authentication</h3>
+            <p>OTP login keeps access simple — demo systems may print OTP to server console.</p>
+          </article>
+
+          <a href="create-election.html" class="feature-card" style="text-decoration:none;color:inherit;" aria-labelledby="admin-title">
+            <div style="font-size:20px">🏛️</div>
+            <h3 id="admin-title">Admin Election Management</h3>
+            <p>Create and schedule elections, add candidates and control visibility.</p>
+          </a>
+
+<a id="voteFeatureCard" href="vote.html" style="text-decoration:none;color:inherit;display:block;">
+  <article class="feature-card" role="button" aria-label="Vote Tally and Results — open vote page">
+    <div style="font-size:20px">📊</div>
+    <h3>Vote Tally & Results</h3>
+    <p>Realtime tallies and final result export for auditing.</p>
+  </article>
+</a>
+
+          <a href="candidates.html" class="feature-card" aria-labelledby="candidate-title" style="text-decoration:none;color:inherit;">
+            <div style="font-size:20px">👥</div>
+            <h3 id="candidate-title">Candidate Listing</h3>
+            <p>View registered candidates with details (name, party, manifesto and contact).</p>
+          </a>
+
+          <article class="feature-card" aria-labelledby="audit-title">
+            <div style="font-size:20px">🧾</div>
+            <h3 id="audit-title">Audit Logs</h3>
+            <p>Critical actions are logged to support audits and security reviews.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY MYVOTE -->
+    <section id="why" class="section" style="background:#fff">
+      <div class="container">
+        <h2>Why choose myVote?</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:12px">
+          <div style="background:#fff;padding:12px;border-radius:8px">
+            <h3>Transparent</h3>
+            <p>Clear, auditable records and result exports so stakeholders can verify outcomes.</p>
+          </div>
+          <div style="background:#fff;padding:12px;border-radius:8px">
+            <h3>Secure</h3>
+            <p>OTP verification, hashed credentials, and role-based access reduce fraud risk.</p>
+          </div>
+          <div style="background:#fff;padding:12px;border-radius:8px">
+            <h3>Accessible</h3>
+            <p>Simple UI, mobile-friendly layout and minimal dependencies for easy deployment.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- OUR PROCESS (vertical with number text only in purple) -->
+    <section id="process" class="section process-section">
+      <div class="container">
+        <h2 class="process-title">How does it work?</h2>
+        <p class="process-intro">Our voting system is flexible — the typical flow below is shown step-by-step.</p>
+
+        <div class="process-steps">
+          <div class="process-step">
+            <div class="step-number">01</div>
+            <div class="step-body">
+              <h3>Election Set-Up</h3>
+              <p>Define election name, dates, ballot and voter eligibility rules. Upload voter lists if needed.</p>
+            </div>
+          </div>
+
+          <div class="process-step">
+            <div class="step-number">02</div>
+            <div class="step-body">
+              <h3>Voting</h3>
+              <p>Voters authenticate, view the ballot and cast a tamper-protected vote (one vote per voter).</p>
+            </div>
+          </div>
+
+          <div class="process-step">
+            <div class="step-number">03</div>
+            <div class="step-body">
+              <h3>Results</h3>
+              <p>When polling ends, votes are tallied and results are published. Exports available for audits.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="process-bg" aria-hidden="true"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer" style="padding:20px;background:#5b2baf;color:#fff;text-align:center">
+    <div class="container">
+      <div>© <strong>myVote</strong> — Secure Online Election System</div>
+      <div class="footer-links" style="margin-top:6px">
+        <a href="#features" style="color:rgba(255,255,255,0.9);text-decoration:none">Features</a> ·
+        <a href="#why" style="color:rgba(255,255,255,0.9);text-decoration:none">Why myVote</a> ·
+        <a href="#process" style="color:rgba(255,255,255,0.9);text-decoration:none">Our Process</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript: safe DOM creation and token-based welcome/logout -->
+  <script>
+    (function () {
+      const authArea = document.getElementById('authArea');
+
+      function createButton(text, className, onClick) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = text;
+        btn.className = className;
+        btn.addEventListener('click', onClick);
+        return btn;
+      }
+
+      function parseJwt(t) {
+        try {
+          const b = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+          return JSON.parse(decodeURIComponent(escape(window.atob(b))));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function populateAuthArea() {
+        // clear
+        while (authArea && authArea.firstChild) authArea.removeChild(authArea.firstChild);
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // show Login and Register buttons
+          if (authArea) {
+            authArea.appendChild(createButton('Login', 'login-btn', () => window.location.href = 'login.html'));
+            authArea.appendChild(createButton('Register', 'register-btn', () => window.location.href = 'register.html'));
+          }
+          return;
+        }
+
+        // try server /api/me (same origin) to get real name; if fails fallback to decode
+        let name = null;
+        try {
+          const res = await fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.user) name = data.user.name || data.user.email || 'User';
+          }
+        } catch (e) {
+          // ignore; fallback to decode token
+        }
+
+        if (!name) {
+          const payload = parseJwt(token);
+          name = payload ? (payload.name || payload.email || 'User') : 'User';
+        }
+
+        // welcome box
+        if (authArea) {
+          const box = document.createElement('div');
+          box.className = 'welcome-box';
+          const span = document.createElement('div');
+          span.className = 'user-name';
+          span.textContent = name;
+          box.appendChild(span);
+
+          const logoutBtn = createButton('Logout', 'logout-btn', () => {
+            localStorage.removeItem('token');
+            window.location.reload();
+          });
+          box.appendChild(logoutBtn);
+          authArea.appendChild(box);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', populateAuthArea);
+    })();
+  </script>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Login — myVote</title>
+  <link href="style.css" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #2f6df6; color: #0f172a;
+      display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px;
+    }
+    .login-card { width:100%; max-width:420px; background:#fff; padding:28px; border-radius:10px; box-shadow:0 22px 60px rgba(2,8,23,0.28); }
+    h2{ margin:0 0 8px 0 }
+    label{ display:block; font-weight:600; margin-top:12px; color:#475569 }
+    input{ width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6eef6; margin-top:6px }
+    .btn { margin-top:16px; width:100%; padding:10px 14px; border-radius:8px; border:none; font-weight:700; background:linear-gradient(90deg,#6b46c1,#5b21b6); color:#fff; cursor:pointer }
+    .small-link { display:block; margin-top:12px; text-align:center; color:#6b7280 }
+    .result { margin-top:10px; font-size:14px; min-height:20px }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h2>Welcome Back</h2>
+    <p style="color:#6b7280;margin:0 0 12px 0">Login to access your account.</p>
+
+    <form id="loginForm" onsubmit="return false;">
+      <label for="identifier">Email or Phone</label>
+      <input id="identifier" type="text" placeholder="you@example.com or +919..." />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Your password" />
+
+      <button id="btnLogin" class="btn">Login</button>
+
+      <div id="loginResult" class="result" aria-live="polite"></div>
+
+      <div class="small-link">Don't have an account? <a href="register.html">Register here</a></div>
+    </form>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3000';
+
+    function qs(id){ return document.getElementById(id); }
+    function show(msg, cls=''){ const el = qs('loginResult'); el.className = 'result ' + cls; el.textContent = msg; }
+
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+      const identifier = qs('identifier').value.trim();
+      const password = qs('password').value;
+      if (!identifier || !password) return show('Please enter both fields', 'error');
+
+      show('Logging in...');
+      try {
+        const res = await fetch(API_BASE + '/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('token', data.token);
+          show('Login successful! Redirecting...');
+          // redirect to landing page (simple prototype flow)
+          setTimeout(() => window.location.href = 'index.html', 700);
+        } else {
+          show(data.error || 'Invalid credentials', 'error');
+        }
+      } catch (err) {
+        show('Network error: ' + err.message, 'error');
+      }
+    });
+
+    // quick UX: press Enter to submit
+    document.getElementById('loginForm').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btnLogin').click(); }});
+  </script>
+</body>
+</html>
