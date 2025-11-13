@@ -1,0 +1,104 @@
+{
+  "users": [
+    {
+      "id": "4cdac28d-b8c0-47ed-9a07-0960468407fc",
+      "name": "hello",
+      "email": "email@example.com",
+      "phone": null,
+      "password_hash": "$2a$10$RnVgTIq2WJyy5lnUCNEsRuPSqcB8I1FpeuiU1a/FnFVGR/NzVW8h.",
+      "created_at": 1762887020560
+    },
+    {
+      "id": "8115e38d-9416-4bac-97b4-0b7230600cd0",
+      "name": "hello",
+      "email": "hello@email.com",
+      "phone": null,
+      "password_hash": "$2a$10$LF9Vgp36Bt5Op.lX08KhPOljh5kQ/ulFYV5Gbwc93Xy0EXWP54Za6",
+      "created_at": 1762887063455
+    },
+    {
+      "id": "a32e9d49-f5da-48aa-a76a-5f18558964f4",
+      "name": "hello",
+      "email": "hello1@email.com",
+      "phone": "+91914207655",
+      "password_hash": "$2a$10$lah4ZPqaFVd4E8t65.nwOeTI3zfl3K8hBo.P8.RGnYtSMfyXLeMna",
+      "created_at": 1762887506207
+    },
+    {
+      "id": "a37227d7-c20c-4401-94d2-a25c7be0c17a",
+      "name": "hello",
+      "email": "hello3@email.com",
+      "phone": "+91914207125",
+      "password_hash": "$2a$10$vwbhMW2pcUeksp0qTqn0V.ROcvK.XCQqxIf/d1FUOJgSjEbRzcaHK",
+      "created_at": 1762887856102
+    },
+    {
+      "id": "76029bc1-4d11-48cf-bdf8-1873bb8fcfd0",
+      "name": "Aranb Paul",
+      "email": "hello4@email.com",
+      "phone": "+91914207126",
+      "password_hash": "$2a$10$rIRWMj5jJN.H7zuBAUUD8eMht1sGy4UTX3vXTIvyV5Ck9joFg7DIi",
+      "created_at": 1762887920642
+    },
+    {
+      "id": "25ea756c-94de-496a-98d2-a30143974631",
+      "name": "hello",
+      "email": "hello5@email.com",
+      "phone": "+91914207199",
+      "password_hash": "$2a$10$vt5DoEEkdbIn9UdkVlGnAe1YUa8bqqO734D6UMgDzRxzLRMBi7iwS",
+      "created_at": 1763028518286,
+      "age": 76,
+      "aadhar": "123412341234",
+      "gender": "male",
+      "isAdmin": false
+    },
+    {
+      "id": "81f17724-309a-4846-bd32-d097b7ed2025",
+      "name": "Harsh Kumar",
+      "email": "harshkr@gmail.com",
+      "phone": "987654321",
+      "password_hash": "$2a$10$NxtOn3TW8x4erI8NVMjfP.j/f5X53vSNIIDExjI/g20sbFnv/ysqy",
+      "created_at": 1763031493410,
+      "age": 22,
+      "aadhar": "987698769876",
+      "gender": "male",
+      "isAdmin": false
+    },
+    {
+      "id": "2ee88e3f-1063-474b-a6a4-0c9330a94975",
+      "name": "Ayush Verma",
+      "email": "ayush91@gmail.com",
+      "phone": "23453627253",
+      "password_hash": "$2a$10$lCJ2xMul8Nm9n8PsOsKkUu.M3v2f3cdEP7gbQqkgbZGNNxEB2uGyy",
+      "created_at": 1763045127803,
+      "age": 76,
+      "aadhar": "123412341234",
+      "gender": "male",
+      "isAdmin": false
+    },
+    {
+      "id": "6ff1d2dd-6d17-462f-8e24-e303c1854cd3",
+      "name": "kanhai chatterjee",
+      "email": "kanhaichatter@gmail.com",
+      "phone": "+919142026998",
+      "password_hash": "$2a$10$dtgzLeF7pSP/AA2DeAs.Uu7phW.DIvIpUkOx9Hu7TfnWYg48IVtUq",
+      "created_at": 1763046351238,
+      "age": 34,
+      "aadhar": "123412341234",
+      "gender": "male",
+      "isAdmin": false
+    },
+    {
+      "id": "a5641bcd-5aa3-4ef2-81fb-f26321c83bae",
+      "name": "Harsh Kumar",
+      "email": "harshkr1@gmail.com",
+      "phone": "+91987654321",
+      "password_hash": "$2a$10$HzuFBKbfDwuhbqUvfmXVYO9kEI9oG4gOcxY2G1gn.ItEgtrtyObv2",
+      "created_at": 1763047384884,
+      "age": 23,
+      "aadhar": "123412341234",
+      "gender": "male",
+      "isAdmin": false
+    }
+  ]
+}

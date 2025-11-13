@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Candidates — myVote</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --purple: #5b2baf; --muted: #64748b; --bg: #2267A0; --card: #ffffff; }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#0f172a}
+    .wrap{max-width:1000px;margin:28px auto;padding:20px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .brand .title{font-weight:700;color:#c7a6ff}
+    .subtitle{color:white}
+    .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.12)}
+    h1{margin:0 0 4px 0;font-size:1.25rem}
+    .muted{color:var(--muted);margin-bottom:12px}
+    .top-actions{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+    .small-btn{background:transparent;border:1px solid #eee;padding:8px 10px;border-radius:8px;cursor:pointer;color:#0f172a}
+    .meta-row{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .meta-left{display:flex;gap:10px;align-items:center}
+    .list{display:grid;gap:12px;margin-top:12px}
+    .candidate{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid #eef2f7;background:#fff;box-shadow:0 6px 18px rgba(2,6,23,0.03)}
+    .avatar{width:56px;height:56px;border-radius:8px;background:linear-gradient(180deg,#f3f4f6,#fff);display:flex;align-items:center;justify-content:center;font-weight:700;color:#374151;flex-shrink:0}
+    .candidate-body{flex:1}
+    .candidate-title{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .name{font-weight:700;font-size:1rem;color:#0f172a}
+    .party{font-size:0.9rem;color:#6b7280}
+    .manifesto{color:#334155;font-size:0.95rem;line-height:1.35}
+    .empty{padding:20px;text-align:center;color:#475569}
+    .error{padding:12px;border-radius:8px;background:#fff3cd;color:#92400e;margin-top:12px}
+    /* ID prompt overlay */
+    .id-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:9998}
+    .id-box{background:#fff;padding:18px;border-radius:12px;max-width:420px;width:92%;box-shadow:0 12px 40px rgba(2,6,23,0.2);text-align:center}
+    .id-input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;margin-top:10px}
+    .id-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+    .btn{padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+    .btn-primary{background:var(--purple);color:#fff}
+    @media (max-width:700px){.candidate{flex-direction:column}.avatar{width:48px;height:48px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+          <rect rx="6" width="36" height="36" fill="#2267A0"></rect>
+          <text x="50%" y="58%" fill="white" font-size="20" font-family="Arial" font-weight="700" text-anchor="middle">MV</text>
+        </svg>
+        <div>
+          <div class="title">myVote</div>
+          <div class="subtitle">Candidate listing</div>
+        </div>
+      </div>
+      <div style="color:white">Logged in as <strong id="loggedUser">Guest</strong></div>
+    </header>
+
+    <main class="card" role="main" aria-live="polite">
+      <div class="meta-row">
+        <div class="meta-left">
+          <div>
+            <h1 id="eTitle">Candidates</h1>
+            <div class="muted" id="eSub">Election ID: <span id="eId">—</span></div>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button id="copyIdBtn" class="small-btn" title="Copy election id">Copy ID</button>
+          <!-- Both links redirect to index.html and open Features section with id as query -->
+          <a id="voteLink" class="small-btn" href="#" target="_blank" rel="noopener">Open voting page</a>
+          <a id="resultLink" class="small-btn" href="#" target="_blank" rel="noopener">Results</a>
+        </div>
+      </div>
+
+      <div id="statusMessage" class="muted" aria-hidden="true"></div>
+      <div id="errorBox" class="error" style="display:none"></div>
+
+      <div id="candidatesList" class="list" role="list" aria-label="Candidate list"></div>
+      <div id="emptyNote" class="empty" style="display:none">No candidates found for this election.</div>
+    </main>
+  </div>
+
+  <!-- ID prompt overlay (shown if no id in URL) -->
+  <div id="idOverlay" class="id-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="idPromptTitle">
+    <div class="id-box">
+      <h3 id="idPromptTitle">Enter Election ID</h3>
+      <p>Enter your Election ID to view the candidate list.</p>
+      <input id="idInput" class="id-input" placeholder="Paste Election ID here" />
+      <div class="id-actions">
+        <button id="idCancel" class="btn">Cancel</button>
+        <button id="idSubmit" class="btn btn-primary">Load</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  // --- Demo elections object (use the exact data you supplied) ---
+  const DEMO_ELECTIONS = {
+    "IDSC202": {
+      id: "IDSC202",
+      title: "Student Council — Demo 202 (IDSC202)",
+      candidates: [
+        {id:"c1", name:"Aditi Sharma", party:"Youth Cultural Forum", manifesto:"More cultural events"},
+        {id:"c2", name:"Rohit Verma", party:"Fit & Active Club", manifesto:"Improve sports facilities"},
+        {id:"c3", name:"Priya Nair", party:"Student Progress Union", manifesto:"Better scheduling & notifications"},
+        {id:"c4", name:"Manish Gupta", party:"Student Finance Committee", manifesto:"Transparent fund usage"},
+        {id:"c5", name:"Sneha Kulkarni", party:"Women Empowerment Forum", manifesto:"Campus safety drives"}
+      ]
+    },
+    "IDSC201": {
+      id: "IDSC201",
+      title: "Student Council — Demo 201 (IDSC201)",
+      candidates: [
+        {id:"a1", name:"Abhimanyu Kumar", party:"Culture Circle", manifesto:"More student fests"},
+        {id:"a2", name:"Ankit Kumar", party:"Sports Guild", manifesto:"Upgrade sports ground"},
+        {id:"a3", name:"Ritesh Ghosh", party:"Eco Club", manifesto:"Green campus initiatives"},
+        {id:"a4", name:"Vikram Paul", party:"Tech Forum", manifesto:"Better Tech Events"},
+        {id:"a5", name:"Rhea Deshmukh", party:"Welfare Board", manifesto:"Student welfare programs"}
+      ]
+    },
+    "IDSC203": {
+      id: "IDSC203",
+      title: "Student Council — Demo 203 (IDSC203)",
+      candidates: [
+        {id:"a1", name:"Neha Patil", party:"Culture Circle", manifesto:"More student fests"},
+        {id:"a2", name:"Karan Mehta", party:"Sports Guild", manifesto:"Upgrade sports ground"},
+        {id:"a3", name:"Sana Roy", party:"Eco Club", manifesto:"Green campus initiatives"},
+        {id:"a4", name:"Vikram Joshi", party:"Tech Forum", manifesto:"Better lab access hours"},
+        {id:"a5", name:"Rhea Deshmukh", party:"Welfare Board", manifesto:"Student welfare programs"}
+      ]
+    }
+  };
+
+  // --- Helpers ---
+  function escapeHtml(s){ return (s===null||s===undefined)?'':String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function initialsOf(name){ return (name||'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('') || '??'; }
+  function $id(id){ return document.getElementById(id); }
+
+  function getIdFromLocation(){
+    const path = (window.location.pathname||'').split('/').filter(Boolean);
+    if(path.length>=2 && path[0].toLowerCase() === 'e') return path[1];
+    const qp = new URLSearchParams(window.location.search);
+    if(qp.get('id')) return qp.get('id');
+    return null;
+  }
+
+  (function showLoggedUser(){
+    const el = $id('loggedUser');
+    try {
+      const t = localStorage.getItem('token');
+      if(t){ const p = JSON.parse(atob(t.split('.')[1])); el.textContent = p.name || p.email || 'User'; }
+      else el.textContent = 'Guest';
+    } catch { el.textContent = 'User'; }
+  })();
+
+  function renderCandidate(c){
+    const div = document.createElement('div'); div.className = 'candidate';
+    div.innerHTML = `<div class="avatar">${escapeHtml(initialsOf(c.name))}</div>
+      <div class="candidate-body">
+        <div class="candidate-title"><div class="name">${escapeHtml(c.name||'Unnamed')}</div>${c.party?`<div class="party">• ${escapeHtml(c.party)}</div>`:''}</div>
+        ${c.manifesto?`<div class="manifesto">${escapeHtml(c.manifesto)}</div>`:`<div class="manifesto" style="color:#9ca3af">No manifesto provided</div>`}
+      </div>`;
+    return div;
+  }
+  function renderCandidates(arr){
+    const list = $id('candidatesList'); list.innerHTML = '';
+    arr.forEach(c => list.appendChild(renderCandidate(c)));
+  }
+
+  // When id is not found anywhere (server returns 404 or user typed invalid id),
+  // show friendly "Incorrect Election ID" message instead of demo list.
+  function showIncorrectId(id){
+    $id('errorBox').textContent = `Incorrect Election ID: "${escapeHtml(id)}". Please check the ID and try again.`;
+    $id('errorBox').style.display = 'block';
+    $id('candidatesList').innerHTML = '';
+    $id('emptyNote').style.display = 'none';
+  }
+
+  async function loadAndShow(id){
+    const status = $id('statusMessage'); const errorBox = $id('errorBox'); const empty = $id('emptyNote');
+    const listEl = $id('candidatesList');
+
+    const up = id ? String(id).toUpperCase() : '';
+    $id('eId').textContent = escapeHtml(up || '—');
+    // set links to index features with id
+    const indexWithFeatures = `index.html?id=${encodeURIComponent(up)}#features`;
+    $id('voteLink').href = indexWithFeatures;
+    $id('resultLink').href = indexWithFeatures;
+
+    status.textContent = 'Loading candidates...';
+    errorBox.style.display = 'none';
+    empty.style.display = 'none';
+    listEl.innerHTML = '';
+
+    // If id matches our local demo list, show that immediately (no network needed)
+    if (DEMO_ELECTIONS[up]) {
+      // show demo title if available
+      $id('eTitle').textContent = DEMO_ELECTIONS[up].title || 'Candidates';
+      renderCandidates(DEMO_ELECTIONS[up].candidates);
+      status.textContent = '';
+      return;
+    }
+
+    // If not a demo id, attempt to fetch from backend.
+    try {
+      const rsp = await fetch(`/api/elections/${encodeURIComponent(up)}/candidates`);
+      if(!rsp.ok){
+        // backend responded 404/other -> show incorrect id (user asked to show incorrect)
+        showIncorrectId(up);
+        status.textContent = '';
+        return;
+      }
+      const json = await rsp.json().catch(()=>null);
+      const candidates = (json && (json.candidates || (json.election && json.election.candidates))) || [];
+      if(!Array.isArray(candidates) || candidates.length === 0){
+        // backend returned empty list -> treat as incorrect / no candidates
+        $id('emptyNote').style.display = 'block';
+        status.textContent = '';
+        return;
+      }
+      // success: show candidates and title if available
+      $id('eTitle').textContent = (json && (json.election && json.election.companyName)) ? json.election.companyName : 'Candidates';
+      renderCandidates(candidates);
+      status.textContent = '';
+    } catch (err) {
+      // network error -> show incorrect (since user asked for explicit incorrect behavior by default)
+      showIncorrectId(up);
+      status.textContent = '';
+    }
+  }
+
+  // copy ID button
+  function setupCopy(id){
+    const btn = $id('copyIdBtn');
+    btn.onclick = () => {
+      if(!id) return alert('No election id set');
+      if(navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(id).then(()=>{ btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy ID',1200); });
+      } else {
+        prompt('Copy election id', id);
+      }
+    };
+  }
+
+  // overlay handlers
+  const overlay = $id('idOverlay'), input = $id('idInput'), idCancel = $id('idCancel'), idSubmit = $id('idSubmit');
+  idCancel.onclick = ()=> { overlay.style.display = 'none'; };
+  idSubmit.onclick = ()=> {
+    const val = (input.value||'').trim();
+    if(!val){ input.focus(); return; }
+    overlay.style.display = 'none';
+    startWithId(val);
+  };
+
+  function startWithId(raw){
+    const up = String(raw).toUpperCase();
+    // if demo has title show that; otherwise generic
+    $id('eTitle').textContent = (DEMO_ELECTIONS[up] && DEMO_ELECTIONS[up].title) ? DEMO_ELECTIONS[up].title : 'Candidates';
+    setupCopy(up);
+    loadAndShow(up);
+  }
+
+  // boot
+  const initialId = getIdFromLocation();
+  if(initialId){
+    startWithId(initialId);
+  } else {
+    overlay.style.display = 'flex';
+    input.value = '';
+    input.focus();
+  }
+
+  // expose for testing
+  window.__myvote_loadCandidates = (x) => startWithId(x);
+
+})();
+</script>
+</body>
+</html>

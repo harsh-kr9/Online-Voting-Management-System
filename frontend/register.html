@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register — myVote</title>
+
+  <link href="style.css" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #2f6df6;
+      color: #0f172a;
+    }
+
+    .auth-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+    }
+
+    .register-card {
+      width: 100%;
+      max-width: 980px;
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px;
+      box-shadow: 0 22px 60px rgba(2,8,23,0.28);
+      border: 1px solid rgba(10,20,60,0.06);
+    }
+
+    .register-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      margin-bottom: 18px;
+    }
+
+    .register-head h2 { margin:0; font-size:20px; color:#111827; }
+    .register-sub { color:#6b7280; font-size:13px; margin-top:6px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px 18px;
+      margin-top: 16px;
+    }
+
+    .full { grid-column: 1 / -1; }
+
+    label { display:block; font-size:13px; color:#475569; margin-bottom:6px; font-weight:600; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], input[type="number"], select {
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #e6eef6;
+      background:#fff;
+      font-size:14px;
+      outline:none;
+      transition: box-shadow .12s, border-color .12s, transform .08s;
+    }
+    input:focus, select:focus {
+      border-color: rgba(91,33,182,0.9);
+      box-shadow: 0 10px 30px rgba(91,33,182,0.06);
+      transform: translateY(-1px);
+    }
+
+    .actions {
+      display:flex;
+      justify-content:flex-end;
+      margin-top:18px;
+      gap:12px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius:8px;
+      border: none;
+      cursor:pointer;
+      font-weight:700;
+      font-size:14px;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg,#6b46c1,#5b21b6);
+      color: #fff;
+      box-shadow: 0 14px 36px rgba(91,33,182,0.18);
+    }
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid rgba(13,20,60,0.06);
+      color: #111827;
+    }
+
+    .result {
+      margin-top:12px;
+      min-height:26px;
+      font-size:13px;
+      color:#111827;
+    }
+    .result.error { color:#9b1c1c; }
+    .result.success { color:#166534; }
+
+    .footer-links {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    .footer-links a {
+      color: #5b21b6;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .footer-links a:hover { text-decoration: underline; }
+
+    @media (max-width: 1000px) {
+      .form-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .actions { justify-content:center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="register-card" role="main" aria-labelledby="reg-head">
+      <div class="register-head">
+        <div>
+          <h2 id="reg-head">Registration</h2>
+          <div class="register-sub">Fill the form to create your account.</div>
+        </div>
+        <div style="color:#6b7280;font-size:13px">Step 1 of 1</div>
+      </div>
+
+      <!-- FORM -->
+      <form id="regForm" class="form-grid" autocomplete="off" onsubmit="return false;">
+        <div>
+          <label for="name">Full Name *</label>
+          <input id="name" name="name" type="text" placeholder="Enter your full name" required />
+        </div>
+
+        <div>
+          <label for="email">Email *</label>
+          <input id="email" name="email" type="email" placeholder="you@example.com" required />
+        </div>
+
+        <div>
+          <label for="phone">Mobile number *</label>
+          <input id="phone" name="phone" type="tel" placeholder="+919912345678" required />
+        </div>
+
+        <div>
+          <label for="age">Age *</label>
+          <input id="age" name="age" type="number" min="1" max="120" placeholder="e.g. 28" required />
+        </div>
+
+        <div>
+          <label for="gender">Gender *</label>
+          <select id="gender" name="gender" required>
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+            <option value="not-say">Prefer not to say</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="aadhar">Aadhaar ID (12 digits) *</label>
+          <input id="aadhar" name="aadhar" type="text" inputmode="numeric" placeholder="123412341234" maxlength="12" required />
+        </div>
+
+        <div class="full">
+          <label for="password">Password *</label>
+          <input id="password" name="password" type="password" placeholder="Create a strong password (min 6 chars)" required />
+        </div>
+
+        <div class="full actions">
+          <button type="button" class="btn btn-ghost" onclick="window.location.href='index.html'">Cancel</button>
+          <button id="btnRegister" type="submit" class="btn btn-primary">Register ➜</button>
+        </div>
+
+        <div id="regResult" class="result full" aria-live="polite"></div>
+
+        <!-- 👇 ADDED LOGIN LINK -->
+        <div class="footer-links full">
+          Already have an account? <a href="login.html">Login here</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://localhost:3000";
+
+    const qs = id => document.getElementById(id);
+    const show = (msg, level='') => {
+      const el = qs('regResult');
+      el.className = 'result full' + (level ? ' ' + level : '');
+      el.textContent = typeof msg === 'string' ? msg : JSON.stringify(msg);
+    };
+
+    function validateAadhar(a) {
+      return /^\d{12}$/.test(a);
+    }
+
+    document.getElementById('regForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      show('', '');
+      const name = qs('name').value.trim();
+      const email = qs('email').value.trim();
+      const phone = qs('phone').value.trim();
+      const age = qs('age').value.trim();
+      const password = qs('password').value;
+      const aadhar = qs('aadhar').value.trim();
+      const gender = qs('gender').value;
+
+      if (!name || name.length < 2) return show('Please enter your full name (min 2 chars).', 'error');
+      if (!email) return show('Email is required.', 'error');
+      if (!phone) return show('Phone is required.', 'error');
+      if (!age || Number(age) <= 0) return show('Please enter a valid age.', 'error');
+      if (!password || password.length < 6) return show('Password must be at least 6 characters.', 'error');
+      if (!aadhar || !validateAadhar(aadhar)) return show('Aadhaar must be 12 digits.', 'error');
+      if (!gender) return show('Please select gender.', 'error');
+
+      const payload = { name, email, phone, password, age: Number(age), aadhar, gender };
+
+      show('Registering...');
+
+      try {
+        const res = await fetch(API_BASE + '/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          show('Registration successful! Redirecting to login...', 'success');
+          // ✅ ensure redirect actually happens
+          setTimeout(() => window.location.href = 'login.html', 1500);
+        } else {
+          show(data.error || JSON.stringify(data), 'error');
+        }
+      } catch (err) {
+        show('Network error: ' + err.message, 'error');
+      }
+    });
+  </script>
+</body>
+</html>
