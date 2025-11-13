@@ -38,7 +38,24 @@ const USERS_FILE = path.join(__dirname, 'users.json');
 const ELECTIONS_FILE = path.join(__dirname, 'elections.json');
 const AUDIT_LOG = path.join(__dirname, 'audit.log');
 
-app.use(cors());
+// --------------------------
+// 🔥 UPDATED CORS (IMPORTANT)
+// --------------------------
+const allowedOrigins = [
+  'https://harsh-kr9.github.io',
+  'https://harsh-kr9.github.io/Online-Voting-Management-System',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error('CORS blocked by server'), false);
+  }
+}));
+
 app.use(express.json());
 
 // ------------------------
@@ -113,7 +130,6 @@ function isValidPhone(p) {
 // Auth helpers
 // ------------------------
 function signTokenForUser(user) {
-  // include id so we can lookup user record later
   const payload = { id: user.id, name: user.name || '', email: user.email || '', phone: user.phone || '' };
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '8h' });
 }
@@ -125,8 +141,7 @@ function getUserFromAuthHeader(req) {
   try {
     const data = jwt.verify(token, JWT_SECRET);
     const db = readData();
-    const user = db.users.find(u => u.id === data.id);
-    return user || null;
+    return db.users.find(u => u.id === data.id) || null;
   } catch (err) {
     return null;
   }
@@ -134,28 +149,19 @@ function getUserFromAuthHeader(req) {
 
 function requireAdmin(req, res) {
   const user = getUserFromAuthHeader(req);
-  if (!user) {
-    res.status(401).json({ error: 'Missing or invalid token' });
-    return null;
-  }
-  if (!user.isAdmin) {
-    res.status(403).json({ error: 'Admin access required' });
-    return null;
-  }
+  if (!user) return res.status(401).json({ error: 'Missing or invalid token' }) && null;
+  if (!user.isAdmin) return res.status(403).json({ error: 'Admin access required' }) && null;
   return user;
 }
 
 function requireAuth(req, res) {
   const user = getUserFromAuthHeader(req);
-  if (!user) {
-    res.status(401).json({ error: 'Missing or invalid token' });
-    return null;
-  }
+  if (!user) return res.status(401).json({ error: 'Missing or invalid token' }) && null;
   return user;
 }
 
 // ------------------------
-// Routes: Users / Auth
+// Routes
 // ------------------------
 
 // POST /api/register
@@ -163,27 +169,26 @@ app.post('/api/register', async (req, res) => {
   try {
     const { name, email, phone, password, age, aadhar, gender } = req.body || {};
 
-    // basic validation
-    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+    if (!name || name.trim().length < 2)
       return res.status(400).json({ error: 'Name is required and must be at least 2 characters.' });
-    }
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ error: 'Password is required and must be at least 6 characters.' });
-    }
-    if ((!email || email.trim() === '') && (!phone || phone.trim() === '')) {
+
+    if (!password || password.length < 6)
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+
+    if ((!email || email.trim() === '') && (!phone || phone.trim() === ''))
       return res.status(400).json({ error: 'Either email or phone is required.' });
-    }
+
     if (email && !isValidEmail(email)) return res.status(400).json({ error: 'Invalid email format.' });
     if (phone && !isValidPhone(phone)) return res.status(400).json({ error: 'Invalid phone format.' });
 
     const db = readData();
+    if (email && db.users.find(u => u.email === email.trim()))
+      return res.status(409).json({ error: 'Email already registered.' });
 
-    if (email && db.users.find(u => u.email === email.trim())) return res.status(409).json({ error: 'Email already registered.' });
-    if (phone && db.users.find(u => u.phone === phone.trim())) return res.status(409).json({ error: 'Phone already registered.' });
+    if (phone && db.users.find(u => u.phone === phone.trim()))
+      return res.status(409).json({ error: 'Phone already registered.' });
 
-    // hash password (bcryptjs)
-    const salt = bcrypt.genSaltSync(10);
-    const hash = bcrypt.hashSync(password, salt);
+    const hash = bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 
     const user = {
       id: uuidv4(),
@@ -192,19 +197,16 @@ app.post('/api/register', async (req, res) => {
       phone: phone ? phone.trim() : null,
       password_hash: hash,
       created_at: Date.now(),
-      // optional fields
       age: age ? Number(age) : undefined,
       aadhar: aadhar ? String(aadhar) : undefined,
       gender: gender || undefined,
       isAdmin: false
     };
 
-    // push and save
     db.users.push(user);
     writeData(db);
 
     audit(`register | user:${user.id}`);
-
     return res.status(201).json({ message: 'User registered successfully', userId: user.id });
   } catch (err) {
     console.error('Register error:', err);
@@ -216,14 +218,15 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', (req, res) => {
   try {
     const { identifier, password } = req.body || {};
-    if (!identifier || !password) return res.status(400).json({ error: 'identifier and password are required' });
+    if (!identifier || !password)
+      return res.status(400).json({ error: 'Identifier and password are required' });
 
     const db = readData();
-    const user = db.users.find(u => (u.email === identifier) || (u.phone === identifier));
+    const user = db.users.find(u => u.email === identifier || u.phone === identifier);
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-    const ok = bcrypt.compareSync(password, user.password_hash);
-    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!bcrypt.compareSync(password, user.password_hash))
+      return res.status(401).json({ error: 'Invalid credentials' });
 
     const token = signTokenForUser(user);
     audit(`login | user:${user.id}`);
@@ -238,47 +241,37 @@ app.post('/api/login', (req, res) => {
 app.get('/api/me', (req, res) => {
   const user = getUserFromAuthHeader(req);
   if (!user) return res.status(401).json({ error: 'Missing or invalid token' });
-  // return safe user info (no password hash)
-  const safe = { id: user.id, name: user.name, email: user.email, phone: user.phone, isAdmin: !!user.isAdmin };
+
+  const safe = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    isAdmin: !!user.isAdmin
+  };
+
   res.json({ user: safe });
 });
 
-// ------------------------
-// Routes: Elections
-// ------------------------
-
-// POST /api/elections  (any logged-in user)
+// POST /api/elections
 app.post('/api/elections', (req, res) => {
   try {
-    // require any authenticated user (not just admin)
     const authUser = requireAuth(req, res);
     if (!authUser) return;
 
-    // accept either numeric timestamps (ms) or ISO strings for start/end
-    const {
-      companyName,
-      totalSeats,
-      start_ts, // can be number (ms) or ISO string
-      end_ts,   // same as above
-      description = '',
-      candidates = []
-    } = req.body || {};
+    const { companyName, totalSeats, start_ts, end_ts, description = '', candidates = [] } = req.body || {};
 
-    if (!companyName || !totalSeats || !start_ts || !end_ts || !Array.isArray(candidates) || candidates.length === 0) {
-      return res.status(400).json({ error: 'companyName, totalSeats, start_ts, end_ts and at least one candidate are required' });
-    }
+    if (!companyName || !totalSeats || !start_ts || !end_ts || !Array.isArray(candidates) || candidates.length === 0)
+      return res.status(400).json({ error: 'Missing required election fields' });
 
-    // normalize timestamps
-    const parseToNumber = (v) => {
-      if (typeof v === 'number') return Number(v);
-      const d = new Date(String(v));
-      if (isNaN(d.getTime())) return NaN;
-      return d.getTime();
-    };
+    const parseToNumber = (v) => (typeof v === 'number' ? Number(v) : new Date(String(v)).getTime());
 
     const s = parseToNumber(start_ts), e = parseToNumber(end_ts), seats = Number(totalSeats);
-    if (Number.isNaN(s) || Number.isNaN(e) || s >= e) return res.status(400).json({ error: 'Invalid start/end timestamps' });
-    if (!Number.isInteger(seats) || seats <= 0) return res.status(400).json({ error: 'totalSeats must be a positive integer' });
+    if (Number.isNaN(s) || Number.isNaN(e) || s >= e)
+      return res.status(400).json({ error: 'Invalid start/end timestamps' });
+
+    if (!Number.isInteger(seats) || seats <= 0)
+      return res.status(400).json({ error: 'totalSeats must be a positive integer' });
 
     const electionsDb = readElections();
     const election = {
@@ -290,7 +283,6 @@ app.post('/api/elections', (req, res) => {
       end_ts: e,
       created_by: authUser.id,
       created_at: Date.now(),
-      // candidates: each candidate gets an id + votes counter + optional party/manifesto
       candidates: candidates.map(c => ({
         id: uuidv4(),
         name: String(c.name || '').trim(),
@@ -301,13 +293,10 @@ app.post('/api/elections', (req, res) => {
       }))
     };
 
-    // save
     electionsDb.elections.push(election);
     writeElections(electionsDb);
 
     audit(`create-election | user:${authUser.id} | election:${election.id}`);
-
-    // return full election object so client can immediately use election.id and view candidate list
     return res.status(201).json({ success: true, election });
   } catch (err) {
     console.error('create election error', err);
@@ -315,7 +304,7 @@ app.post('/api/elections', (req, res) => {
   }
 });
 
-// GET /api/elections  (public summary)
+// GET /api/elections
 app.get('/api/elections', (req, res) => {
   const db = readElections();
   const list = db.elections.map(e => ({
@@ -329,7 +318,7 @@ app.get('/api/elections', (req, res) => {
   res.json({ elections: list });
 });
 
-// GET /api/elections/:id  (details incl candidates & votes)
+// GET /api/elections/:id
 app.get('/api/elections/:id', (req, res) => {
   const db = readElections();
   const e = db.elections.find(x => x.id === req.params.id);
@@ -337,11 +326,12 @@ app.get('/api/elections/:id', (req, res) => {
   res.json({ election: e });
 });
 
-// GET /api/elections/:id/candidates  (id + name + description + party + manifesto)
+// GET /api/elections/:id/candidates
 app.get('/api/elections/:id/candidates', (req, res) => {
   const db = readElections();
   const e = db.elections.find(x => x.id === req.params.id);
   if (!e) return res.status(404).json({ error: 'Election not found' });
+
   const candidates = e.candidates.map(c => ({
     id: c.id,
     name: c.name,
@@ -352,16 +342,12 @@ app.get('/api/elections/:id/candidates', (req, res) => {
   res.json({ electionId: e.id, candidates });
 });
 
-// ------------------------
-// Health / fallback
-// ------------------------
+// Health route
 app.get('/', (req, res) => {
   res.send('myVote backend: API running. Use /api/* endpoints.');
 });
 
-// ------------------------
 // Start server
-// ------------------------
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
   console.log(`Users: ${USERS_FILE}`);
